@@ -61,9 +61,7 @@ def findCountours(mask):
     cnts = imutils.grab_contours(cnts)
     return cnts
 
-# find the largest contour in the mask, then use
-# it to compute the minimum enclosing circle and
-# centroid
+# displays contours on the screen
 def displayDetection(frame,cnts):
     if len(cnts) > 0:
 
