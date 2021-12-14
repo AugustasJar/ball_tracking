@@ -1,6 +1,6 @@
 from imutils.video import VideoStream
 import numpy as np
-import cv2
+import cv2 #pip install opencv-contrib-python
 import imutils
 import time
 import math
