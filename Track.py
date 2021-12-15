@@ -25,7 +25,6 @@ def videoLoop(upperB,lowerB):
         mask = create_mask(frame,lowerB,upperB)
         cnts = findCountours(mask)
         frame = displayDetection(frame,cnts)
-
         # angle could be more useful when inputing controls, pts - points are the quadrilateral corners.
         angle,pts = findBestPath(cnts)
 
@@ -54,12 +53,15 @@ def create_mask(image,LB,UB):
 
 #dumb contour detection, need to add template matching or something.
 def findCountours(mask):
-    # find contours in the mask and initialize the current
-    # (x, y) center of the ball
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
-    return cnts
+    l = list()
+    for c in cnts:
+        ((x, y), radius) = cv2.minEnclosingCircle(c)
+        area = cv2.contourArea(c)
+        if math.pi*pow(int(radius),2) - area < area*0.3:
+            l.append(c)
+    return l
 
 # displays contours on the screen
 def displayDetection(frame,cnts):
