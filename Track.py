@@ -11,7 +11,7 @@ img_height = 480
 base_width = 720
 fogOfWar = 125
 theta = (30*math.pi)/180
-def videoLoop(lowerB,upperB):
+def videoLoop(ranges):
     vs = VideoStream(0)
     vs.start()
     time.sleep(1.0)
@@ -22,7 +22,7 @@ def videoLoop(lowerB,upperB):
             break
 
         frame = cv2.resize(frame, (img_width,img_height))
-        mask = create_mask(frame,lowerB,upperB)
+        mask = create_mask(frame,ranges)
         cnts = findCountours(mask)
         frame = displayDetection(frame,cnts)
         # angle could be more useful when inputing controls, pts - points are the quadrilateral corners.
@@ -40,16 +40,20 @@ def videoLoop(lowerB,upperB):
     cv2.destroyAllWindows()
 
 #proprecesses the image based on a hsv range (LowerBounds, upperBounds)
-def create_mask(image,LB,UB):
+def create_mask(image,ranges):
     hsv_image = cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
     blurred = cv2.GaussianBlur(hsv_image, (7,7),0)
-    LB = np.array(LB)
-    UB = np.array(UB)
-    mask = cv2.inRange(blurred,LB,UB)
-    mask = mask
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-    return mask
+    image = None
+    for range in ranges:
+        mask = cv2.inRange(blurred,range[0],range[1])
+        mask = mask
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
+        if (image is not None):
+            image = cv2.add(image,mask)
+        else:
+            image = mask
+    return image
 
 #dumb contour detection, need to add template matching or something.
 def findCountours(mask):
