@@ -11,7 +11,7 @@ img_height = 480
 base_width = 720
 fogOfWar = 125
 theta = (30*math.pi)/180
-def videoLoop(upperB,lowerB):
+def videoLoop(lowerB,upperB):
     vs = VideoStream(0)
     vs.start()
     time.sleep(1.0)
@@ -31,7 +31,7 @@ def videoLoop(upperB,lowerB):
         if angle:
             frame = drawLine(frame,pts[0],pts[1])
             frame = drawLine(frame,pts[2],pts[3])
-        cv2.imshow("Frame", frame)
+        cv2.imshow("Frame", mask)
 
         key = cv2.waitKey(100) & 0xFF
         if key == ord("q"):
@@ -59,18 +59,15 @@ def findCountours(mask):
     for c in cnts:
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         area = cv2.contourArea(c)
-        if math.pi*pow(int(radius),2) - area < area*0.3:
+        if math.pi*pow(int(radius),2) - area < area*0.8:
             l.append(c)
     return l
-
 # displays contours on the screen
 def displayDetection(frame,cnts):
     if len(cnts) > 0:
-
         center = None
         for c in cnts:
-            if (cv2.contourArea(c) > 1000):
-
+            if (cv2.contourArea(c) > 500):
                 ((x, y), radius) = cv2.minEnclosingCircle(c)
                 M = cv2.moments(c)
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
