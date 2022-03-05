@@ -23,15 +23,16 @@ def videoLoop(ranges):
 
         frame = cv2.resize(frame, (img_width,img_height))
         mask = create_mask(frame,ranges)
+        cv2.imshow("mask",mask)
         cnts = findCountours(mask)
         frame = displayDetection(frame,cnts)
         # angle could be more useful when inputing controls, pts - points are the quadrilateral corners.
-        angle,pts = findBestPath(cnts)
-
-        if angle:
-            frame = drawLine(frame,pts[0],pts[1])
-            frame = drawLine(frame,pts[2],pts[3])
-        cv2.imshow("Frame", mask)
+        # angle,pts = findBestPath(cnts)
+        #
+        # if angle:
+        #     frame = drawLine(frame,pts[0],pts[1])
+        #     frame = drawLine(frame,pts[2],pts[3])
+        cv2.imshow("Frame", frame)
 
         key = cv2.waitKey(100) & 0xFF
         if key == ord("q"):
@@ -48,7 +49,7 @@ def create_mask(image,ranges):
         mask = cv2.inRange(blurred,range[0],range[1])
         mask = mask
         mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=5)
         if (image is not None):
             image = cv2.add(image,mask)
         else:
@@ -63,7 +64,7 @@ def findCountours(mask):
     for c in cnts:
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         area = cv2.contourArea(c)
-        if math.pi*pow(int(radius),2) - area < area*0.8:
+        if math.pi*pow(int(radius),2) - area < area*0.95:
             l.append(c)
     return l
 # displays contours on the screen
@@ -71,7 +72,7 @@ def displayDetection(frame,cnts):
     if len(cnts) > 0:
         center = None
         for c in cnts:
-            if (cv2.contourArea(c) > 500):
+            if (cv2.contourArea(c) > 300):
                 ((x, y), radius) = cv2.minEnclosingCircle(c)
                 M = cv2.moments(c)
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
@@ -155,3 +156,96 @@ def TriangleArea(a,b,c):
     p = (a + b + c)/2
     A = math.sqrt(p*(p-a)*(p-b)*(p-c))
     return A
+
+class computerVision:
+
+    def __init__(self,ranges):
+        vs = VideoStream(0)
+        vs.start()
+        time.sleep(1.0)
+        self.minimum_countour_area = 300
+        self.ranges = ranges
+        self.gaussian_blur_kernel = (7,7)
+        self.image_width = 300
+
+        self.detections = []
+
+    def videoLoop(self):
+        vs = VideoStream(0)
+        vs.start()
+        time.sleep(1.0)
+
+        while True:
+            # grab the current frame
+            frame = vs.read()
+            if frame is None:
+                break
+
+            frame = cv2.resize(frame, width = self.image_width)
+            mask = self.create_mask(frame, self.ranges)
+
+            cnts = self.findCountours(mask)
+            frame = self.displayDetection(frame, cnts)
+            self.addDetections()
+
+            cv2.imshow("Frame", frame)
+
+            key = cv2.waitKey(100) & 0xFF
+            if key == ord("q"):
+                break
+        vs.stop()
+        cv2.destroyAllWindows()
+
+    # proprecesses the image based on a hsv range (LowerBounds, upperBounds)
+    def create_mask(self,image, ranges):
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        blurred = cv2.GaussianBlur(hsv_image, self.gaussian_blur_kernel, 0)
+        image = None
+        for range in ranges:
+            mask = cv2.inRange(blurred, range[0], range[1])
+            mask = mask
+            mask = cv2.erode(mask, None, iterations=2)
+            mask = cv2.dilate(mask, None, iterations=5)
+            if (image is not None):
+                image = cv2.add(image, mask)
+            else:
+                image = mask
+        return image
+
+    # dumb contour detection, need to add template matching or something.
+    def findCountours(self,mask):
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        l = list()
+        for c in cnts:
+            area = cv2.contourArea(c)
+            if area > 300:
+                ((x, y), radius) = cv2.minEnclosingCircle(c)
+                if math.pi * pow(int(radius), 2) - area < area * 0.90:
+                    l.append(c)
+        return l
+
+    # displays contours on the screen
+    def displayDetection(self,frame, cnts):
+        if len(cnts) > 0:
+            for c in cnts:
+                if (cv2.contourArea(c) > 300):
+                    ((x, y), radius) = cv2.minEnclosingCircle(c)
+                    M = cv2.moments(c)
+                    center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+                    # cv2.circle(frame, (int(x), int(y)), int(radius),(0, 255, 255), 2)
+                    cv2.circle(frame, center, 5, (0, 0, 255), -1)
+        return frame
+
+
+    def addDetections(self, cnts):
+        l = []
+        if len(cnts) > 0:
+            for c in cnts:
+                M = cv2.moments(c)
+                center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+                l.append(center)
+        self.detections = l
+
+
+
